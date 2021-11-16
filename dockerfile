@@ -1,7 +1,7 @@
 # set base image (host OS)
 FROM arm32v7/python:3.6-buster
 
-MAINTANER Your Name "remo@breitis.ch"
+MAINTAINER Your Name "remo@breitis.ch"
 
 ARG DEBIAN_FRONTEND=noninteractive
 
