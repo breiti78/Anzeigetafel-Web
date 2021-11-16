@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block styles %}
+{{ super() }}
+<link rel="stylesheet" href={{ url_for('static', filename='nano.min.css' )}}/>
+{% endblock %}
+
+{% block scripts %}
+<script src={{ url_for('static', filename='pickr.min.js' )}}></script>
+<script type="text/javascript" src={{ url_for('static', filename='ntc.js' )}}></script>
+{{ super() }}
+<script type="text/javascript" charset="utf-8">
+
+  $(document).ready(function () {
+    var socket = io.connect('http://' + document.domain + ':' + location.port);
+
+    var eSelect = document.getElementById('option-mode');
+    eSelect.onchange = function () {
+      if (eSelect.value === "scn-text") {
+        $('#container-text').show();
+      } else {
+        $('#container-text').hide()
+      }
+      var topic = "anzeigetafel/mode";
+      var message = $('#option-mode').val();
+      sendMqtt(topic, message);
+    }
+
+    function sendMqtt(topic, message) {
+      var qos = 0;
+      var data = '{"topic": "' + topic + '", "message": "' + message + '", "qos": ' + qos + '}';
+      socket.emit('publish', data = data);
+      return   // The function returns the product of p1 and p2
+    }
+
+    $('#publish').click(function (event) {
+      var topic = $('#topic').val();
+      var message = $('#message').val();
+      sendMqtt(topic, message);
+    });
+
+    $('#publish_text').click(function (event) {
+      for (let i = 1; i < 6; i++) {
+        var topic = "anzeigetafel/textline" + i;
+        var message = $('#line' + i).val();
+        sendMqtt(topic, message);
+      }
+
+    });
+
+    $('#subscribe').click(function (event) {
+      var topic = $('#subscribe_topic').val();
+      var qos = $('#subscribe_qos').val();
+      var data = '{"topic": "' + topic + '", "qos": ' + qos + '}';
+      socket.emit('subscribe', data = data);
+      $('#subscribe').hide();
+      $('#unsubscribe').show();
+      $('#subscribe_topic').prop('readonly', true);
+    });
+
+    $('#unsubscribe').click(function (event) {
+      socket.emit('unsubscribe_all');
+      $('#subscribe').show();
+      $('#unsubscribe').hide();
+      $('#subscribe_topic').prop('readonly', false);
+    });
+
+    socket.on('mqtt_message', function (data) {
+      console.log(data);
+      var text = '(' + data['topic'] + ' qos: ' + data['qos'] + ') ' + data['payload'];
+      var $textarea = $('#subscribe_messages');
+      $textarea.val($textarea.val() + text + '\n');
+    })
+    const pickr = Pickr.create({
+      el: '.color-picker',
+      theme: 'nano', // or 'monolith', or 'nano'
+
+      swatches: [
+        'rgba(255,0,0, 1)',
+        'rgba(0,0,255, 1)',
+        'rgba(0,255,0, 1)',
+        'rgba(255,255,0, 1)',
+        'rgba(0,255,255, 1)',
+        'rgba(255,0,255, 1)',
+        'rgba(128,0,128, 1)',
+        'rgba(0,128,0, 1)',
+        'rgba(128,0,0, 1)',
+        'rgba(128,128,0, 1)',
+        'rgba(0,0,128, 1)',
+        'rgba(0,128,128, 1)'
+
+      ],
+
+      components: {
+
+        // Main components
+        preview: true,
+        opacity: false,
+        hue: false,
+        palette: true,
+
+        // Input / output Options
+        interaction: {
+          hex: false,
+          rgba: false,
+          hsla: false,
+          hsva: false,
+          cmyk: false,
+          input: true,
+          clear: true,
+          save: true
+        }
+      }
+    });
+
+    pickr.on('init', instance => {
+      console.log('Event: "init"', instance);
+    }).on('save', (color, instance) => {
+      var hex_color = color.toHEXA().toString();
+      var n_match = ntc.name(hex_color);
+      n_name = n_match[1];
+      n_rgb = n_match[0];
+      i = document.querySelector('input[name="selected-line"]:checked').value
+      document.getElementById("line" + i).style.color = `${n_rgb}`
+      sendMqtt("anzeigetafel/colorline" + i, n_name)
+      console.log('Event: "save"', color, n_name, n_rgb);
+    }).on('cancel', instance => {
+      console.log('Event: "cancel"', instance);
+    });
+  });
+</script>
+
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h3 class="panel-title">Anzeigetafel Modus:</h3>
+    </div>
+    <select id="option-mode" class="form-control">
+      <option value=scn-time>Time</option>
+      <option value=scn-text>Text</option>
+      <option value=scn-timing>Timing</option>
+      <option value=md-logo>Logo</option>
+      <option value=scn-blank>Aus</option>
+    </select>
+
+  </div>
+</div>
+<div class="b-example-divider"></div>
+<div class="container" id="container-text" style="align-items: center;">
+  <h4 class="panel-title">Text:</h4>
+  <div class="form-group">
+    <div class="input-group">
+      <input id="line1" class="form-control" value="Line 1"
+        style="border-radius: 0px;border: 0.1px;background-color:#504E4D; font-size:12px">
+      <input type="radio" name="selected-line" value="1" id="radioLine1" style="align-self: center;">
+    </div>
+    <div class="input-group">
+      <input id="line2" class="form-control" value="Line 2"
+        style="border-radius: 0px;border: 0.1px;background-color:#504E4D; font-size:20px">
+      <input type="radio" name="selected-line" value="2" id="radioLine2" style="align-self: center;">
+    </div>
+    <div class="input-group">
+      <input id="line3" class="form-control" value="Line 3"
+        style="border-radius: 0px;border: 0.1px;background-color:#504E4D; font-size:20px">
+      <input type="radio" name="selected-line" value="3" id="radioLine3" style="align-self: center;">
+    </div>
+    <div class="input-group">
+      <input id="line4" class="form-control" value="Line 4"
+        style="border-radius: 0px;border: 0.1px;background-color:#504E4D; font-size:12px">
+      <input type="radio" name="selected-line" value="4" id="radioLine4" style="align-self: center;">
+    </div>
+    <div class="input-group">
+      <input id="line5" class="form-control" value="Line 5"
+        style="border-radius: 0px;border: 0.1px;background-color:#504E4D; font-size:12px">
+      <input type="radio" name="selected-line" value="5" id="radioLine5" style="align-self: center;">
+    </div>
+  </div>
+  <button id="publish_text" class="btn btn-primary">Publish Text</button>
+  <div class="color-picker"></div>
+
+</div>
+{% endblock %}

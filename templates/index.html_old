@@ -1,0 +1,227 @@
+{% extends "bootstrap/base.html" %}
+{% block title %}Anzeige Tafel{% endblock %}
+
+{% block styles %}
+<!-- CSS only -->
+<link href={{ url_for('static', filename='bootstrap.min.css' )}} rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+{% endblock %}
+
+{% block scripts %}
+<!-- JavaScript Bundle with Popper -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+<script type="text/javascript" src={{ url_for('static', filename='socket.io.min.js' )}}></script>
+<!--  {{ super() }} -->
+<script type="text/javascript" charset="utf-8">
+    $(document).ready(function () {
+        var socket = io.connect('http://' + document.domain + ':' + location.port);
+
+        $('#publish').click(function (event) {
+            var topic = $('#topic').val();
+            var message = $('#message').val();
+            var qos = 0;
+            var data = '{"topic": "' + topic + '", "message": "' + message + '", "qos": ' + qos + '}';
+            socket.emit('publish', data = data);
+        });
+
+        $('#publish_mode').click(function (event) {
+            var topic = "anzeigetafel/mode";
+            var message = $('#message').val();
+            var qos = 0;
+            var data = '{"topic": "' + topic + '", "message": "' + message + '", "qos": ' + qos + '}';
+            socket.emit('publish', data = data);
+        });
+
+        $('#publish_text').click(function (event) {
+            for (let i = 1; i < 6; i++) {
+                var topic = "anzeigetafel/textline" + i;
+                var message = $('#line' + i).val();
+                var qos = 0;
+                var data = '{"topic": "' + topic + '", "message": "' + message + '", "qos": ' + qos + '}';
+                socket.emit('publish', data = data);
+            }
+        });
+
+        $('#subscribe').click(function (event) {
+            var topic = $('#subscribe_topic').val();
+            var qos = $('#subscribe_qos').val();
+            var data = '{"topic": "' + topic + '", "qos": ' + qos + '}';
+            socket.emit('subscribe', data = data);
+            $('#subscribe').hide();
+            $('#unsubscribe').show();
+            $('#subscribe_topic').prop('readonly', true);
+        });
+
+        $('#unsubscribe').click(function (event) {
+            socket.emit('unsubscribe_all');
+            $('#subscribe').show();
+            $('#unsubscribe').hide();
+            $('#subscribe_topic').prop('readonly', false);
+        });
+
+        socket.on('mqtt_message', function (data) {
+            console.log(data);
+            var text = '(' + data['topic'] + ' qos: ' + data['qos'] + ') ' + data['payload'];
+            var $textarea = $('#subscribe_messages');
+            $textarea.val($textarea.val() + text + '\n');
+        })
+    });
+</script>
+{% endblock %}
+
+{% block navbar %}
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">Navbar scroll</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarScroll" aria-controls="navbarScroll" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarScroll">
+        <ul class="navbar-nav me-auto my-2 my-lg-0 navbar-nav-scroll" style="--bs-scroll-height: 100px;">
+          <li class="nav-item">
+            <a class="nav-link active" aria-current="page" href="#">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Link</a>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarScrollingDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Link
+            </a>
+            <ul class="dropdown-menu" aria-labelledby="navbarScrollingDropdown">
+              <li><a class="dropdown-item" href="#">Action</a></li>
+              <li><a class="dropdown-item" href="#">Another action</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li><a class="dropdown-item" href="#">Something else here</a></li>
+            </ul>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link disabled">Link</a>
+          </li>
+        </ul>
+        <form class="d-flex">
+          <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
+          <button class="btn btn-outline-success" type="submit">Search</button>
+        </form>
+      </div>
+    </div>
+  </nav>
+{% endblock %}
+
+
+{% block content %}
+<button type="button" class="btn btn-primary">Primary</button>
+<button type="button" class="btn btn-secondary">Secondary</button>
+<button type="button" class="btn btn-success">Success</button>
+<button type="button" class="btn btn-danger">Danger</button>
+<button type="button" class="btn btn-warning">Warning</button>
+<button type="button" class="btn btn-info">Info</button>
+<button type="button" class="btn btn-light">Light</button>
+<button type="button" class="btn btn-dark">Dark</button>
+<button type="button" class="btn btn-link">Link</button>
+
+    <!-- Content here -->
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-xs-12">
+                <h1>Flask-MQTT Example</h1>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-xs-6">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Publish MQTT Message</h3>
+                    </div>
+                    <div class="panel-body">
+                        <div class="col-xs-12">
+                            <div class="row">
+                                <div class="form-horizontal">
+                                    <div class="form-group">
+                                        <label class="control-label col-xs-4">Topic: </label>
+                                        <div class="col-xs-8">
+                                            <input id="topic" class="form-control">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="control-label col-xs-4">Message: </label>
+                                        <div class="col-xs-8">
+                                            <select id="message" class="form-control">
+                                                <option value=scn-time>Time</option>
+                                                <option value=scn-text>Text</option>
+                                                <option value=scn-timing>Timing</option>
+                                                <option value=md-logo>Logo</option>
+                                                <option value=scn-blank>Logo</option>
+                                            </select>
+                                            <button id="publish_mode" class="btn btn-primary">Set Mode</button>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="control-label col-xs-4">Text: </label>
+                                        <div class="col-xs-8">
+                                            <input id="line1" class="form-control">
+                                            <input id="line2" class="form-control">
+                                            <input id="line3" class="form-control">
+                                            <input id="line4" class="form-control">
+                                            <input id="line5" class="form-control">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-xs-8 col-xs-offset-4">
+                                            <button id="publish_text" class="btn btn-primary">Publish Text</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xs-6">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Subscribe MQTT Messages</h3>
+                    </div>
+                    <div class="panel-body">
+                        <div class="col-xs-12">
+                            <div class="row">
+                                <div class="form-horizontal">
+                                    <div class="form-group">
+                                        <label class="control-label col-xs-4">Topic:</label>
+                                        <div class="col-xs-8">
+                                            <input id="subscribe_topic" class="form-control">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="control-label col-xs-4">Qos: </label>
+                                        <div class="col-xs-8">
+                                            <select id="subscribe_qos" class="form-control">
+                                                <option value=0>0</option>
+                                                <option value=1>1</option>
+                                                <option value=2>2</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="col-xs-8 col-xs-offset-4">
+                                            <button id="subscribe" class="btn btn-primary">Subscribe</button>
+                                            <button id="unsubscribe" class="btn btn-default"
+                                                style="display: none;">Unsubscribe</button>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="control-label col-xs-4">Messages:</label>
+                                        <div class="col-xs-8">
+                                            <textarea id="subscribe_messages" class="form-control" rows=10></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+{% endblock %}
