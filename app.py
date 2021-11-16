@@ -41,7 +41,7 @@ def mode():
     return render_template('mode.html')
 
 @app.route('/base')
-def mode():
+def base():
     return render_template('base.html')
 
 @socketio.on('publish')
